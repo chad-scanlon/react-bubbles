@@ -1,45 +1,101 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import axiosWithAuth from "../utils/axiosWithAuth";
+import { useParams } from "react-router-dom";
 
 const initialColor = {
   color: "",
-  code: { hex: "" }
+  code: { hex: "" },
 };
 
 const ColorList = ({ colors, updateColors }) => {
   console.log(colors);
+
   const [editing, setEditing] = useState(false);
   const [colorToEdit, setColorToEdit] = useState(initialColor);
+  // const [changedColor, setChangedColor] = useState([]);
+  const [color, setColor] = useState(initialColor);
+  const [createdColor, setCreatedColor] = useState(initialColor);
+  const { id } = useParams;
 
-  const editColor = color => {
+  // useEffect(() => {
+  //   axiosWithAuth()
+  //     .get("/colors/")
+  //     .then(
+  //       (res) => console.log(res.data)
+  //       // setChangedColor(res.data)
+  //     )
+  //     .catch((err) => console.log("get color id", err.message, err.response));
+  // }, []);
+
+  const editColor = (color) => {
     setEditing(true);
     setColorToEdit(color);
   };
 
-  const saveEdit = e => {
+  const saveEdit = (e) => {
     e.preventDefault();
     // Make a put request to save your updated color
     // think about where will you get the id from...
-    // where is is saved right now?
+    // where is it saved right now?
+    axiosWithAuth()
+      .put(`/colors/${colorToEdit.id}`, colorToEdit)
+      .then((res) => {
+        // console.log(res);
+        const NewColor = colors.map((col) => {
+          if (col.id === color.id) {
+            return color;
+          }
+          return col;
+        });
+        setColor(NewColor);
+      })
+
+      .catch((err) =>
+        console.error(
+          "UpdateForm.js: handleSubmit: ",
+          err.message,
+          err.response
+        )
+      );
   };
 
-  const deleteColor = color => {
+  const deleteColor = (color) => {
     // make a delete request to delete this color
+    axiosWithAuth()
+      .delete(`/colors/${color.id}`)
+      .then((res) => {
+        setColorToEdit(res.data);
+        // push("/");
+        // props.getMovieList();
+      })
+      .catch((err) => console.log("delete error", err.message, err.response));
   };
+
+  // const addColor = (event) => {
+  //   event.preventDefault();
+  //   axiosWithAuth()
+  //     .post("/colors", createdColor)
+  //     .then((res) => {
+  //       console.log(res);
+  //       setCreatedColor(res.data);
+  //     });
+  // };
 
   return (
     <div className="colors-wrap">
       <p>colors</p>
       <ul>
-        {colors.map(color => (
+        {colors.map((color) => (
           <li key={color.color} onClick={() => editColor(color)}>
             <span>
-              <span className="delete" onClick={e => {
-                    e.stopPropagation();
-                    deleteColor(color)
-                  }
-                }>
-                  x
+              <span
+                className="delete"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteColor(color);
+                }}
+              >
+                x
               </span>{" "}
               {color.color}
             </span>
@@ -56,7 +112,7 @@ const ColorList = ({ colors, updateColors }) => {
           <label>
             color name:
             <input
-              onChange={e =>
+              onChange={(e) =>
                 setColorToEdit({ ...colorToEdit, color: e.target.value })
               }
               value={colorToEdit.color}
@@ -65,10 +121,10 @@ const ColorList = ({ colors, updateColors }) => {
           <label>
             hex code:
             <input
-              onChange={e =>
+              onChange={(e) =>
                 setColorToEdit({
                   ...colorToEdit,
-                  code: { hex: e.target.value }
+                  code: { hex: e.target.value },
                 })
               }
               value={colorToEdit.code.hex}
